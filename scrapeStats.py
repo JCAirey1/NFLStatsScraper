@@ -23,7 +23,7 @@ def getHeaders(html_soup):
 	table = html_soup.find("div", class_="table_wrapper")
 
 	for i, header in enumerate(table.find("tr", class_=lambda x: x!= "over_header").find_all('th')):
-		if statsidx > 0:
+		if statsidx > 0 and header["data-stat"] != 'pts_def':
 			stats_headers.append(header["data-stat"])
 		elif header["data-stat"] == 'opp':
 			statsidx = i + 1
@@ -57,7 +57,7 @@ def parseGames(table, team, games):
 
 		for i, cell in enumerate(row.find_all(['td','th'])):
 			if cell.has_attr('data-stat'):
-				if instats == True:
+				if instats == True and cell["data-stat"] != 'pts_def':
 					stats.append(cell.get_text())
 				elif cell["data-stat"] == 'week_num':
 					week = cell.get_text()
@@ -98,11 +98,15 @@ def parseGames(table, team, games):
 
 while yr <= datetime.datetime.now().year:
 	games = {}
+	
+	response = get(geturl(teamlist[0], yr))
+	html_soup = BeautifulSoup(response.text, 'html.parser')
+	headers = getHeaders(html_soup)
+
 	for team in teamlist:
 		try:
 			response = get(geturl(team, yr))
 			html_soup = BeautifulSoup(response.text, 'html.parser')
-			headers = getHeaders(html_soup)
 			parseGames(html_soup, team, games)
 		except Exception as e: 
 			print('Error year:' + str(yr) + ' Team:' + team)
@@ -116,8 +120,8 @@ while yr <= datetime.datetime.now().year:
 
 		for week in games:
 			for location in games[week]:
-				f.write(','.join('"{0}"'.format(w) for w in games[week][location]['meta']) + ',' +
-					','.join('"{0}"'.format(w) for w in games[week][location]['h']) + ',' +
-					','.join('"{0}"'.format(w) for w in games[week][location]['a']))
+				f.write(','.join(meta for meta in games[week][location]['meta']) + ',' +
+					','.join(h for h in games[week][location]['h']) + ',' +
+					','.join(a for a in games[week][location]['a']))
 				f.write('\n')
 	yr = yr + 1
