@@ -22,6 +22,9 @@ def getHeaders(html_soup):
 	statsidx = 0
 	table = html_soup.find("div", class_="table_wrapper")
 
+	if table is None:
+		return
+
 	for i, header in enumerate(table.find("tr", class_=lambda x: x!= "over_header").find_all('th')):
 		if statsidx > 0 and header["data-stat"] != 'pts_def':
 			stats_headers.append(header["data-stat"])
@@ -42,8 +45,8 @@ def getHeaders(html_soup):
 	return retval
 
 def parseGames(table, team, games):
-	#table = html_soup.find("table", class_="sliding_cols")
 	table = html_soup.find("tbody")
+	
 	if table is None:
 		return
 
@@ -96,12 +99,16 @@ def parseGames(table, team, games):
 					games[week][opp]['h'] = ['N/A' for item in stats]
 					games[week][opp]['h'][0] = opp
 
-while yr <= datetime.datetime.now().year:
+while yr <= datetime.datetime.now().year and len(teamlist) > 0:
 	games = {}
 	
 	response = get(geturl(teamlist[0], yr))
 	html_soup = BeautifulSoup(response.text, 'html.parser')
 	headers = getHeaders(html_soup)
+
+	if headers is None:
+		print('invalid headers')
+		exit(0);
 
 	for team in teamlist:
 		try:
